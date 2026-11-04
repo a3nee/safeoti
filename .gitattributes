@@ -1,0 +1,2 @@
+*.bat text eol=crlf
+*.manifest text eol=crlf
