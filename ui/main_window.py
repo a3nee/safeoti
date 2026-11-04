@@ -38,6 +38,7 @@ from ui.pages.diskspace_page import DiskSpacePage
 from ui.pages.gaming_page import GamingPage
 from ui.pages.health_page import HealthPage
 from ui.pages.processes_page import ProcessesPage
+from ui.pages.programs_page import ProgramsPage
 from ui.pages.settings_page import SettingsPage
 from ui.pages.startup_page import StartupPage
 from ui.workers import MonitorWorker, start_task
@@ -50,6 +51,7 @@ NAV_ITEMS = [
     ("Espaço em disco", "disco"),
     ("Arranque", "arranque"),
     ("Processos", "processos"),
+    ("Programas", "programas"),
     ("Modo Gaming", "gaming"),
     ("Saúde", "saude"),
     ("Definições", "definicoes"),
@@ -172,6 +174,7 @@ class MainWindow(QMainWindow):
         self.diskspace = DiskSpacePage()
         self.startup = StartupPage()
         self.processes = ProcessesPage()
+        self.programs = ProgramsPage()
         self.gaming = GamingPage(self.settings.gaming_close_apps)
         self.health = HealthPage()
         self.settings_page = SettingsPage(self.settings)
@@ -182,6 +185,7 @@ class MainWindow(QMainWindow):
             self.diskspace,
             self.startup,
             self.processes,
+            self.programs,
             self.gaming,
             self.health,
             self.settings_page,
