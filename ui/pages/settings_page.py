@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core import admin, startup
+from core import __version__, admin, startup
 from core.i18n import LANGUAGES, tr
 from core.settings import (
     DEFAULT_GAMING_APPS,
@@ -49,6 +49,7 @@ from ui.common import (
     show_warning,
 )
 from ui.common import PAGE_MARGINS, PAGE_SPACING
+from ui.update_dialog import check_for_updates
 from ui.workers import TaskWorker, start_task
 
 log = logging.getLogger("safeoti.ui.settings")
@@ -183,6 +184,25 @@ class SettingsPage(PageBase):
         startup_layout.addWidget(self.autostart_info)
         layout.addWidget(startup_card)
 
+        # Atualizações
+        layout.addWidget(section_label(tr("Atualizações")))
+        updates_card = QFrame()
+        updates_card.setObjectName("Card")
+        updates_layout = QVBoxLayout(updates_card)
+        updates_layout.setContentsMargins(16, 14, 16, 14)
+        self.chk_updates = QCheckBox(tr("Procurar atualizações ao abrir o SafeOti"))
+        updates_layout.addWidget(self.chk_updates)
+        updates_row = QHBoxLayout()
+        version_label = QLabel(tr("Versão {versao}", versao=__version__))
+        version_label.setObjectName("MutedLabel")
+        updates_row.addWidget(version_label)
+        updates_row.addStretch(1)
+        self.btn_updates = button(tr("Procurar atualizações"), icon_name="atualizar")
+        self.btn_updates.clicked.connect(self._check_updates)
+        updates_row.addWidget(self.btn_updates)
+        updates_layout.addLayout(updates_row)
+        layout.addWidget(updates_card)
+
         # Registos
         layout.addWidget(section_label(tr("Registos")))
         logs_card = QFrame()
@@ -218,6 +238,7 @@ class SettingsPage(PageBase):
         self.interval.setValue(settings.monitor_interval_ms)
         self.theme_combo.setCurrentIndex(max(0, self.theme_combo.findData(settings.theme)))
         self.lang_combo.setCurrentIndex(max(0, self.lang_combo.findData(settings.language)))
+        self.chk_updates.setChecked(bool(settings.check_updates))
         checked = self._autostart_actual if self._autostart_actual is not None else settings.start_with_windows
         self.chk_autostart.setChecked(bool(checked))
         self.status.set_message("")
@@ -281,6 +302,7 @@ class SettingsPage(PageBase):
             start_with_windows=self.chk_autostart.isChecked(),
             theme=self.theme_combo.currentData(),
             language=self.lang_combo.currentData(),
+            check_updates=self.chk_updates.isChecked(),
         ).validate()
 
         wanted_autostart = new.start_with_windows
@@ -331,6 +353,16 @@ class SettingsPage(PageBase):
         self.status.set_message(tr("Definições guardadas."), "success")
         self.status_message.emit(tr("Definições guardadas."))
         self.settings_saved.emit(new)
+
+    # ------------------------------------------------------- atualizações --
+    def _check_updates(self) -> None:
+        self.btn_updates.setEnabled(False)
+        check_for_updates(
+            self,
+            self._settings,
+            manual=True,
+            on_done=lambda: self.btn_updates.setEnabled(True),
+        )
 
     def shutdown(self) -> None:
         pass

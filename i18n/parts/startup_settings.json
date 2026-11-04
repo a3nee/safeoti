@@ -68,5 +68,8 @@
   "A configurar o arranque automático…": "Configuring automatic startup…",
   "Não foi possível guardar as definições.": "Couldn't save settings.",
   "Erro ao guardar as definições.": "Error saving settings.",
-  "Definições guardadas.": "Settings saved."
+  "Definições guardadas.": "Settings saved.",
+  "Procurar atualizações ao abrir o SafeOti": "Check for updates when SafeOti starts",
+  "Versão {versao}": "Version {versao}",
+  "Atualizações": "Updates"
 }
