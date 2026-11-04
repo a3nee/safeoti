@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -34,7 +34,9 @@ from ui.common import (
 )
 from ui.pages.cleaner_page import CleanerPage
 from ui.pages.dashboard import DashboardPage
+from ui.pages.diskspace_page import DiskSpacePage
 from ui.pages.gaming_page import GamingPage
+from ui.pages.health_page import HealthPage
 from ui.pages.processes_page import ProcessesPage
 from ui.pages.settings_page import SettingsPage
 from ui.pages.startup_page import StartupPage
@@ -45,9 +47,11 @@ log = logging.getLogger("safeoti.ui.main")
 NAV_ITEMS = [
     ("Painel", "painel"),
     ("Limpeza", "limpeza"),
+    ("Espaço em disco", "disco"),
     ("Arranque", "arranque"),
     ("Processos", "processos"),
     ("Modo Gaming", "gaming"),
+    ("Saúde", "saude"),
     ("Definições", "definicoes"),
 ]
 
@@ -65,6 +69,7 @@ class MainWindow(QMainWindow):
         self.resize(1240, 800)
         self._build()
         self._start_monitor()
+        QTimer.singleShot(4000, self._startup_update_check)
 
     # ------------------------------------------------------------------ UI --
     def _build(self) -> None:
@@ -164,11 +169,24 @@ class MainWindow(QMainWindow):
         self.stack.setObjectName("Stack")
         self.dashboard = DashboardPage(self.settings.monitor_interval_ms)
         self.cleaner = CleanerPage()
+        self.diskspace = DiskSpacePage()
         self.startup = StartupPage()
         self.processes = ProcessesPage()
         self.gaming = GamingPage(self.settings.gaming_close_apps)
+        self.health = HealthPage()
         self.settings_page = SettingsPage(self.settings)
-        self._pages = [self.dashboard, self.cleaner, self.startup, self.processes, self.gaming, self.settings_page]
+        # A ordem tem de seguir NAV_ITEMS.
+        self._pages = [
+            self.dashboard,
+            self.cleaner,
+            self.diskspace,
+            self.startup,
+            self.processes,
+            self.gaming,
+            self.health,
+            self.settings_page,
+        ]
+        assert len(self._pages) == len(NAV_ITEMS)
         for page in self._pages:
             self.stack.addWidget(page)
             page.status_message.connect(self._show_status)
@@ -176,7 +194,9 @@ class MainWindow(QMainWindow):
 
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.setCurrentRow(0)
-        self.gaming.open_settings.connect(lambda: self.nav.setCurrentRow(5))
+        self.gaming.open_settings.connect(
+            lambda: self.nav.setCurrentRow(self._pages.index(self.settings_page))
+        )
         self.settings_page.settings_saved.connect(self._on_settings_saved)
 
         status = QStatusBar()
@@ -196,6 +216,14 @@ class MainWindow(QMainWindow):
         self.monitor.snapshot.connect(self.dashboard.update_snapshot)
         self.monitor.failed.connect(self._on_monitor_failed)
         self.monitor.start()
+
+    def _startup_update_check(self) -> None:
+        # Arrancado minimizado com o Windows: não interrompe com janelas.
+        if self.isMinimized() or not self.isVisible():
+            return
+        from ui.update_dialog import check_for_updates
+
+        check_for_updates(self, self.settings, manual=False)
 
     def _on_monitor_failed(self, message: str) -> None:
         self._show_status(tr("Monitor do sistema: {message}", message=message))
